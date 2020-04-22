@@ -1,0 +1,44 @@
+---
+# tasks file for cassandra
+  - name: Check cassandra binary is present or not before installation
+    path: '{{ cassandra_install_dir }}'
+    register: cassandra_binary
+
+  - block:
+          - name: Download the binary for cassandra
+            become: yes
+            become_user: root
+            get_url:
+                    url: '{{ cassandra_tgz_url }}'
+                    dest: /tmp/{{ cassandra_tgz }}
+                    mode: 0644
+                    checksum: '{{ cassandra_checksum }}'
+            when: cassandra_binary.stat.exists == False
+
+          - name: Unarchive cassandar binary...
+            become: yes
+            become_user: root
+            unarchive:
+                    remote_src: yes
+                    src: /tmp/{{ cassandra_tgz }}
+                    dest: '{{ cassandra_install_parent_dir }}'
+                    creates: '{{ cassandra_install_dir }}'
+
+    always:
+            - name: Cleanup
+              become: yes
+              become_user: root
+              file:
+                      path: /tmp/{{ cassandra_tgz }}
+                      state: absent
+
+  - name: Creating link file
+    become: yes
+    become_user: root
+    file:
+            src: '{{ cassandra_install_dir }}'
+            dest: '{{ cassandra_link_dir }}'
+            state: link
+
+
+
